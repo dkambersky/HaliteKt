@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="MyBot_old">
+  <artifact type="jar" name="MyBot_old">
     <output-path>$PROJECT_DIR$/out/artifacts/MyBot_old</output-path>
     <root id="archive" name="MyBot_old.jar">
       <element id="directory" name="/META-INF">
