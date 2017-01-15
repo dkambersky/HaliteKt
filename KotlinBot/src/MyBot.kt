@@ -1,7 +1,10 @@
 import com.sun.org.apache.xml.internal.security.Init
+import java.io.IOException
 import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
+import java.util.logging.SimpleFormatter
+import javax.print.attribute.IntegerSyntax
 
 /**
  * Created by David on 1
@@ -26,6 +29,7 @@ import java.util.logging.Logger
  *	  - A* / Dijtskra (BFS??)
  *
  */
+
 
 
 /* Constants */
@@ -59,7 +63,6 @@ val PROCESSING_PROPERTIES = 3;
 
 /* Globals */
 var myId = 0
-var gameMap = GameMap(1,1,null) // Dummy map so we don't have to deal with null safety
 var turnCounter = 0
 
 /* Algorithm stuff */
@@ -68,8 +71,8 @@ var qualityMap = arrayOf(Float,Float,Float)
 var regionMap = arrayOf(Float,Float,Float)
 
 /* Logging */
-val logger = Logger.getLogger(BOT_NAME)
-val handler:FileHandler? = null
+val logger:Logger = Logger.getLogger(BOT_NAME)
+var handler:FileHandler? = null
 
 
 fun main(args: Array<String>) {
@@ -81,7 +84,7 @@ fun main(args: Array<String>) {
 
     val iPackage = Networking.getInit()
     myId = iPackage.myID
-    gameMap = iPackage.map
+    val gameMap = iPackage.map
 
     initMap()
 
@@ -110,6 +113,22 @@ fun initMap() {
 
 }
 
-fun initLog() {
+fun initLog() = try {
+    logger.useParentHandlers = false
+    handler = FileHandler(String.format("%s%s - %d%s",
+            LOGFILE_PREFIX, BOT_NAME,
+            System.currentTimeMillis() / 1000, LOGFILE_SUFFIX))
+    logger.addHandler(handler)
+    val formatter = SimpleFormatter()
+    (handler as FileHandler).formatter = formatter
+    logger.level = LOGGING_LEVEL
+    logger.info("Link starto!")
 
+    val turnTimes = mutableListOf<Int>()
+} catch (e:SecurityException) {
+    e.printStackTrace()
+} catch (e:IOException) {
+    e.printStackTrace()
 }
+
+
