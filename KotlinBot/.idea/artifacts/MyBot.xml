@@ -2,12 +2,9 @@
   <artifact type="jar" build-on-make="true" name="MyBot">
     <output-path>$PROJECT_DIR$/out/artifacts/MyBot</output-path>
     <root id="archive" name="MyBot.jar">
-      <element id="directory" name="/META-INF">
-        <element id="file-copy" path="$PROJECT_DIR$/modulename/src/META-INF/MANIFEST.MF" />
-      </element>
+      <element id="module-output" name="KotlinBot" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/kotlin-runtime.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/kotlin-reflect.jar" path-in-jar="/" />
-      <element id="module-output" name="KotlinBot" />
     </root>
   </artifact>
 </component>
