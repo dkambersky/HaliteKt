@@ -162,12 +162,10 @@ fun heuristic(loc: Location): Float {
     }
 
     /* If enemy, go by overkill damage */
-    var totalDamage = 0
-    for (dir in Direction.CARDINALS) {
-        val neighbour = gameMap.getSite(loc, dir)
-        if (neighbour.owner != 0 && neighbour.owner != myId)
-            totalDamage += neighbour.strength
-    }
+    val totalDamage = Direction.CARDINALS
+            .map { gameMap.getSite(loc, it) }
+            .filter { it.owner != 0 && it.owner != myId }
+            .sumBy { it.strength }
 
     logger.fine(String.format(
             "Player tile: [%d, %d] prod: %d str: %d. damage: %d", loc.x,
@@ -355,7 +353,7 @@ fun initMap() {
         }
     }
 
-    logger.info(String
+    logger.severe(String
             .format("Analysis complete. Most interesting regions:\n\t[%.0f,%.0f] Quality: %f\n\t[%f.0,%.0f] Army: %f",
                     currentMostSector[0], currentMostSector[1],
                     currentMostSector[2], currentMostSector[3],
@@ -391,7 +389,7 @@ private fun logTurn(startTime: Long) {
         logMsg.append("Turn times so far: ")
 
         for (i in 0..turnCounter - 1) {
-            logMsg.append(String.format("%dms, ", turnTimes.get(i)))
+            logMsg.append(String.format("%dms, ", turnTimes[i]))
         }
         logger.info(logMsg.toString())
     }
