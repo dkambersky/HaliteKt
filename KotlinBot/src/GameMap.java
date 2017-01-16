@@ -1,7 +1,7 @@
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class GameMap{
+public class GameMap implements Iterable<Location>{
 
     private final Site[][] contents;
     private final Location[][] locations;
@@ -97,6 +97,13 @@ public class GameMap{
         }
     }
 
+
+
+    /* Iterator */
+    public Iterator<Location> iterator(){
+        return new GameMapIterator(this);
+    }
+
     public static class GameMapIterator implements Iterator<Location> {
 
         private GameMap gameMap;
@@ -119,6 +126,7 @@ public class GameMap{
             int x = i % gameMap.width;
 
             if (y >= gameMap.height) throw new NoSuchElementException();
+
             i++;
             return new Location(x, y);
         }

@@ -1,3 +1,4 @@
+import org.jgraph.JGraph
 import java.io.IOException
 import java.util.logging.FileHandler
 import java.util.logging.Level
@@ -17,15 +18,17 @@ import java.util.logging.SimpleFormatter
  *
  *  SIMPLE
  *   - prevent str loss to cap
+ *   - tunnel to high prod places
  *
  *  INTERMEDIATE
  *   - move strength where it's needed
  *   - attacking through combining cells
+ *   - avoid opening new lanes
  *
  *  LARGE, FUNDAMENTAL
  *   - move towards high prod, low str stuff
  *   - map analysis
- *	  - A* / Dijtskra (BFS??)
+ *	  - A* / Dijkstra
  *
  */
 
@@ -75,6 +78,7 @@ var regionMap:Array<Array<FloatArray>>? = null
 val logger:Logger = Logger.getLogger(BOT_NAME)
 var handler:FileHandler? = null
 var turnTimes:MutableList<Int>?=null
+
 
 
 fun main(args: Array<String>) {
@@ -222,6 +226,7 @@ fun heuristic(loc: Location): Float {
     logger.fine(String.format(
             "Player tile: [%d, %d] prod: %d str: %d. damage: %d", loc.x,
             loc.y, site.production, site.strength, totalDamage))
+
     return totalDamage.toFloat()
 
 }
@@ -379,9 +384,7 @@ fun initLog() = try {
     logger.info("Link starto!")
 
     turnTimes = mutableListOf<Int>()
-} catch (e:SecurityException) {
-    e.printStackTrace()
-} catch (e:IOException) {
+} catch (e:Exception) {
     e.printStackTrace()
 }
 
