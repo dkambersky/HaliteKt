@@ -37,7 +37,7 @@ val NEAREST_DIR_SEARCH_FACTOR = 1
 
 
 /* Logging */
-val LOGGING_LEVEL: Level = Level.INFO
+val LOGGING_LEVEL: Level = Level.WARNING
 const val BOT_NAME = "DavKotlinBot_v1"
 const val LOGFILE_PREFIX = "../logs/"
 const val LOGFILE_SUFFIX = ".txt"
@@ -64,6 +64,7 @@ val PROCESSING_PROPERTIES = 3
 var myId = 0
 var turnCounter = 0
 var gameMap:GameMap? = null
+var mode = 0
 
 /* Algorithm stuff */
 var processedMap:Array<Array<FloatArray>>? = null
@@ -113,6 +114,57 @@ fun main(args: Array<String>) {
         logTurn(turnStart)
         Networking.sendFrame(moves)
 }
+}
+
+fun nextMove(loc: Location): Direction {
+    val gameMap = gameMap!!
+    val site = gameMap.getSite(loc)
+
+
+    var border = false
+    logger.fine("Calculating a move.")
+
+    /* Detect borders */
+    var highestHeurDir = Direction.STILL
+
+    for (dir in Direction.CARDINALS) {
+        val neighLoc = gameMap.getLocation(loc, dir)
+        val neighbor = gameMap.getSite(neighLoc)
+
+        if (neighbor.owner != myId) {
+            border = true
+
+            /* Initialize highest prod neighbor */
+            if (highestHeurDir == Direction.STILL)
+                highestHeurDir = dir
+
+            /* Note higher production neighbors */
+            if (heuristic(neighLoc) > heuristic(gameMap.getLocation(loc,
+                    highestHeurDir)))
+                highestHeurDir = dir
+
+        }
+    }
+
+
+    /* Attack weaker neighbours */
+    if (border && gameMap.getSite(loc, highestHeurDir).strength < site.strength)
+        return highestHeurDir
+
+    /* Wait for production */
+    if (site.strength < site.production * PROD_MULTIPLIER || site.production == 0)
+        return Direction.STILL
+
+    /* If inside and not producing, move */
+    if (!border)
+        return nearestEnemyDir(loc)
+
+    /* Fail-safe */
+    logger.warning(String
+            .format("Turn %d: [%d, %d] Couldn't come up with a move. Standing still.",
+                    turnCounter, loc.x, loc.y))
+    return Direction.STILL
+
 }
 
 fun nearestEnemyDir(loc: Location): Direction {
@@ -174,57 +226,6 @@ fun heuristic(loc: Location): Float {
 
 }
 
-fun nextMove(loc: Location): Direction {
-    val gameMap = gameMap!!
-    val site = gameMap.getSite(loc)
-
-
-    var border = false
-    logger.fine("Calculating a move.")
-
-    /* Detect borders */
-    var highestHeurDir = Direction.STILL
-
-    for (dir in Direction.CARDINALS) {
-        val neighLoc = gameMap.getLocation(loc, dir)
-        val neighbor = gameMap.getSite(neighLoc)
-
-        if (neighbor.owner != myId) {
-            border = true
-
-            /* Initialize highest prod neighbor */
-            if (highestHeurDir == Direction.STILL)
-                highestHeurDir = dir
-
-            /* Note higher production neighbors */
-            if (heuristic(neighLoc) > heuristic(gameMap.getLocation(loc,
-                    highestHeurDir)))
-                highestHeurDir = dir
-
-        }
-    }
-
-
-    /* Attack weaker neighbours */
-    if (border && gameMap.getSite(loc, highestHeurDir).strength < site.strength)
-        return highestHeurDir
-
-    /* Wait for production */
-    if (site.strength < site.production * PROD_MULTIPLIER || site.production == 0)
-        return Direction.STILL
-
-    /* If inside and not producing, move */
-    if (!border)
-        return nearestEnemyDir(loc)
-
-    /* Fail-safe */
-    logger.warning(String
-            .format("Turn %d: [%d, %d] Couldn't come up with a move. Standing still.",
-                    turnCounter, loc.x, loc.y))
-    return Direction.STILL
-
-}
-
 fun qualityOfTile(site: Site): Float {
     return (if (site.strength == 0)
         site.production / site.strength
@@ -232,26 +233,25 @@ fun qualityOfTile(site: Site): Float {
         site.production).toFloat()
 }
 
-
 fun initMap() {
     val gameMap = gameMap!!
 
-    processedMap = Array(gameMap.height) { Array(gameMap.width) { FloatArray(PROCESSING_PROPERTIES) } }
-    qualityMap = Array(gameMap.height) { Array(gameMap.width) { FloatArray(PROCESSING_PROPERTIES) } }
+    processedMap = Array(gameMap.width) { Array(gameMap.height) { FloatArray(PROCESSING_PROPERTIES) } }
+    qualityMap = Array(gameMap.width) { Array(gameMap.height) { FloatArray(PROCESSING_PROPERTIES) } }
 
     val processedMap = processedMap!!
     val qualityMap = qualityMap!!
 
-    for (x in 0..gameMap.height - 1) {
-        for (y in 0..gameMap.width - 1) {
+    for (y in 0 until gameMap.height) {
+        for (x in 0 until gameMap.width) {
+
 
             /* Process one tile */
+            logger.warning { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
             val site = gameMap.getLocation(x, y).site
 
             qualityMap[x][y][0] = qualityOfTile(site)
-            qualityMap[x][y][1] = if (site.owner != 0 && site.owner != myId)
-                site.strength.toFloat()
-            else    0f
+            qualityMap[x][y][1] = if (site.owner != 0 && site.owner != myId) site.strength.toFloat() else 0f
 
         }
     }
@@ -360,6 +360,8 @@ fun initMap() {
                     currentMostSector[4], currentMostSector[5]))
 }
 
+
+/* Logging */
 fun initLog() = try {
     logger.useParentHandlers = false
     handler = FileHandler(String.format("%s%s - %d%s",
@@ -377,7 +379,6 @@ fun initLog() = try {
 } catch (e:IOException) {
     e.printStackTrace()
 }
-
 
 private fun logTurn(startTime: Long) {
     val turnTimes = turnTimes!!
