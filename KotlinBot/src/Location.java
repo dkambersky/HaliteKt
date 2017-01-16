@@ -2,12 +2,12 @@ public class Location {
 
     // Public for backward compability
     public final int x, y;
-    private final Site site;
 
-    public Location(int x, int y, Site site) {
+
+    public Location(int x, int y) {
         this.x = x;
         this.y = y;
-        this.site = site;
+
     }
 
     public int getX() {
@@ -18,7 +18,4 @@ public class Location {
         return y;
     }
 
-    public Site getSite() {
-        return site;
-    }
 }

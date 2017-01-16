@@ -103,10 +103,10 @@ fun main(args: Array<String>) {
         val moves = mutableListOf<Move>()
         Networking.updateFrame(gameMap)
 
-        for (y in 0..gameMap.height-1) {
-            for (x in 0..gameMap.width-1) {
+        for (y in 0 until gameMap.height) {
+            for (x in 0 until gameMap.width) {
                 val location = gameMap.getLocation(x, y)
-                val site = location.site
+                val site = gameMap.getSite(location)
 
                 if (site.owner == myId) moves.add(Move(location, nextMove(location)))
             }
@@ -248,7 +248,7 @@ fun initMap() {
 
             /* Process one tile */
             logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
-            val site = gameMap.getLocation(x, y).site
+            val site = gameMap.getSite(x,y)
 
             qualityMap[x][y][0] = qualityOfTile(site)
             qualityMap[x][y][1] = if (site.owner != 0 && site.owner != myId) site.strength.toFloat() else 0f

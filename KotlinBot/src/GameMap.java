@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 public class GameMap{
 
     private final Site[][] contents;
@@ -16,7 +18,7 @@ public class GameMap{
             for(int x = 0; x < width; x++) {
                 final Site site = new Site(productions[x][y]);
                 contents[x][y] = site;
-                locations[x][y] = new Location(x, y, site);
+                locations[x][y] = new Location(x, y);
             }
         }
     }
@@ -69,11 +71,16 @@ public class GameMap{
     }
 
     public Site getSite(Location loc, Direction dir) {
-        return getLocation(loc, dir).getSite();
+        Location target = getLocation(loc, dir);
+        return contents[target.x][target.y];
     }
 
     public Site getSite(Location loc) {
-        return loc.getSite();
+        return contents[loc.x][loc.y];
+    }
+
+    public Site getSite(int x, int y){
+        return contents[x][y];
     }
 
     public Location getLocation(int x, int y) {
@@ -89,4 +96,32 @@ public class GameMap{
             }
         }
     }
+
+    public static class GameMapIterator implements Iterator<Location> {
+
+        private GameMap gameMap;
+        private int i = 0;
+
+        GameMapIterator(GameMap gameMap) {
+            this.gameMap = gameMap;
+        }
+
+        @Override
+        public boolean hasNext() {
+            int y = (i + 1) / gameMap.width;
+            return y < gameMap.height;
+        }
+
+        @Override
+        public Location next() {
+
+            int y = i / gameMap.width;
+            int x = i % gameMap.width;
+
+            if (y >= gameMap.height) throw new NoSuchElementException();
+            i++;
+            return new Location(x, y);
+        }
+    }
 }
+
