@@ -247,7 +247,7 @@ fun initMap() {
 
 
             /* Process one tile */
-            logger.warning { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
+            logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
             val site = gameMap.getLocation(x, y).site
 
             qualityMap[x][y][0] = qualityOfTile(site)
@@ -256,27 +256,27 @@ fun initMap() {
         }
     }
     /* Build map of blurred sites */
-    for (x in 0..gameMap.height - 1) {
-        for (y in 0..gameMap.width - 1) {
+    for (y in 0..gameMap.height - 1) {
+        for (x in 0..gameMap.width - 1) {
 
             var sumQ = 0f
             var sumA = 0f
 
-            for (x1 in (BLUR_DIMENSION - 1) / 2 * -1..BLUR_DIMENSION - 1) {
-                for (y1 in (BLUR_DIMENSION - 1) / 2 * -1..BLUR_DIMENSION - 1) {
+            for (y1 in (BLUR_DIMENSION - 1) / 2 * -1..BLUR_DIMENSION - 1) {
+                for (x1 in (BLUR_DIMENSION - 1) / 2 * -1..BLUR_DIMENSION - 1) {
 
                     // Translate to real location
                     val x2 = if (x1 + x < 0)
-                        gameMap.height + x1 - 1
-                    else if (x + x1 >= gameMap.height)
-                        x + x1 - gameMap.height
+                        gameMap.width + x1 - 1
+                    else if (x + x1 >= gameMap.width)
+                        x + x1 - gameMap.width
                     else
                         x + x1
 
                     val y2 = if (y1 + y < 0)
-                        gameMap.width + y1 - 1
-                    else if (y + y1 >= gameMap.width)
-                        y + y1 - gameMap.width
+                        gameMap.height + y1 - 1
+                    else if (y + y1 >= gameMap.height)
+                        y + y1 - gameMap.height
                     else
                         y + y1
 
@@ -286,6 +286,8 @@ fun initMap() {
                         1f / (1 + Math.abs(x1) + Math
                                 .abs(y1)).toFloat()
 
+
+                    logger.finer { "Parent: [$x,$y]. Neighbor, currently accessing: [$x2,$y2]"}
                     sumQ += qualityMap[x2][y2][0] * weight
                     sumA += qualityMap[x2][y2][1] * weight
 
@@ -308,7 +310,8 @@ fun initMap() {
 
     val regionMap = regionMap!!
 
-    val sectorEdge = gameMap.height / SECTORS_BY_SIDE
+    val sectorEdgeX = gameMap.width / SECTORS_BY_SIDE
+    val sectorEdgeY = gameMap.height / SECTORS_BY_SIDE
     val currentMostSector = FloatArray(6) // 0 x | 1 y | 2 quality | 3 x
     // [army] | 4 y [army] | 5
     // army
@@ -318,18 +321,20 @@ fun initMap() {
 
             var sumQ = 0f
             var sumA = 0f
-            for (x in 0..sectorEdge - 1) {
-                for (y in 0..sectorEdge - 1) {
+            for (y in 0..sectorEdgeY - 1) {
+                for (x in 0..sectorEdgeX - 1) {
 
-                    sumQ += processedMap[i * sectorEdge + x][j * sectorEdge + y][0]
-                    sumA += processedMap[i * sectorEdge + x][j * sectorEdge + y][1]
+                    sumQ += processedMap[i * sectorEdgeX + x][j * sectorEdgeY + y][0]
+                    sumA += processedMap[i * sectorEdgeX + x][j * sectorEdgeY + y][1]
 
 
                 }
             }
 
-            regionMap[i][j][0] = (sumQ / Math.pow(sectorEdge.toDouble(), 2.0)).toFloat()
-            regionMap[i][j][1] = (sumA / Math.pow(sectorEdge.toDouble(), 2.0)).toFloat()
+            val factor:Float = sectorEdgeX.toFloat() * sectorEdgeY.toFloat()
+
+            regionMap[i][j][0] = sumQ / factor
+            regionMap[i][j][1] = sumA / factor
 
             logger.info("Region completed. processedMap:\n"
                     + processedMap[i] + processedMap[i][j] + " "
