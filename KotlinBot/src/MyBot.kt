@@ -1,9 +1,5 @@
-import org.jgraph.JGraph
-import java.io.IOException
-import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
-import java.util.logging.SimpleFormatter
 
 
 /**
@@ -72,12 +68,18 @@ var mode = 0
 /* Algorithm stuff */
 var processedMap:Array<Array<FloatArray>>? = null
 var qualityMap:Array<Array<FloatArray>>? = null
+
+
+/* Pathfinding */
+var graph= HaliteGraph(GameMap.map)
+
 var regionMap:Array<Array<FloatArray>>? = null
 
 /* Logging */
-val logger:Logger = Logger.getLogger(BOT_NAME)
-var handler:FileHandler? = null
+var logger:Logger = initLog()
 var turnTimes:MutableList<Int>?=null
+
+
 
 
 
@@ -97,8 +99,6 @@ fun main(args: Array<String>) {
 
     Networking.sendInit("DavKotlinBot")
     logger.info("Initialization took ${System.currentTimeMillis()-startTime/1000} seconds.")
-
-
 
     while (true) {
         turnCounter++
@@ -123,6 +123,15 @@ fun main(args: Array<String>) {
 fun nextMove(loc: Location): Direction {
     val gameMap = gameMap!!
     val site = gameMap.getSite(loc)
+
+
+    /* Debug */
+    val dest = Location(5,5)
+
+    val path = graph.path(loc,dest)
+    val nextTile = path.first() as Location
+
+
 
 
     var border = false
@@ -372,20 +381,10 @@ fun initMap() {
 
 
 /* Logging */
-fun initLog() = try {
-    logger.useParentHandlers = false
-    handler = FileHandler(String.format("%s%s - %d%s",
-            LOGFILE_PREFIX, BOT_NAME,
-            System.currentTimeMillis() / 1000, LOGFILE_SUFFIX))
-    logger.addHandler(handler)
-    val formatter = SimpleFormatter()
-    (handler as FileHandler).formatter = formatter
-    logger.level = LOGGING_LEVEL
-    logger.info("Link starto!")
-
-    turnTimes = mutableListOf<Int>()
-} catch (e:Exception) {
-    e.printStackTrace()
+fun initLog():Logger {
+    Logging.init( LOGFILE_PREFIX, BOT_NAME, LOGFILE_SUFFIX, LOGGING_LEVEL)
+    turnTimes = mutableListOf < Int >()
+    return Logging.logger
 }
 
 private fun logTurn(startTime: Long) {

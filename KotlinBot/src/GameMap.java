@@ -6,9 +6,11 @@ public class GameMap implements Iterable<Location>{
     private final Site[][] contents;
     private final Location[][] locations;
     public final int width, height;
+    public static GameMap map;
 
     public GameMap(int width, int height, int[][] productions) {
 
+        map = this;
         this.width = width;
         this.height = height;
         this.contents = new Site[width][height];
