@@ -3,9 +3,8 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.WeightedGraph;
 import org.jgrapht.alg.BidirectionalDijkstraShortestPath;
-import org.jgrapht.graph.SimpleGraph;
-
-import java.util.List;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleWeightedGraph;
 
 /**
  * shutup IDEA
@@ -19,17 +18,23 @@ public class HaliteGraph {
     public HaliteGraph(GameMap map) {
 
         /* Base graph */
-        graphSimple = new SimpleGraph<Location, DefaultEdge>(DefaultEdge.class);
+        graph = new SimpleWeightedGraph<Location, DefaultWeightedEdge>(DefaultWeightedEdge.class
+        );
 
         for (Location loc : map) {
             Logging.logger.finer(String.format("Adding [%d,%d] to graph", loc.x, loc.y));
-            graphSimple.addVertex(loc);
+            graph.addVertex(loc);
         }
 
         for (Location loc : map) {
             for (Location neighbor : loc) {
-                Logging.logger.finer(String.format("Adding edge [%d,%d] - [%d,%d] to graph", loc.x, loc.y, neighbor.x, neighbor.y));
-                graphSimple.addEdge(loc, neighbor);
+                Logging.logger.finer(String.format("Adding edge [%d,%d] - [%d,%d] to graph",
+                        loc.x, loc.y, neighbor.x, neighbor.y));
+
+                DefaultWeightedEdge edge = new DefaultWeightedEdge();
+                graph.addEdge(loc, neighbor);
+                graph.setEdgeWeight(edge,loc.getWeight());
+
 
             }
         }
@@ -42,19 +47,15 @@ public class HaliteGraph {
 
     }
 
-    public List path(Location from, Location to) {
 
-        return BidirectionalDijkstraShortestPath.findPathBetween
-                (graphSimple, from, to);
-    }
-
-    public GraphPath pathVertex(Location from, Location to){
+    public GraphPath pathVertex(Location from, Location to) {
         return new BidirectionalDijkstraShortestPath<>(graphSimple, from, to)
                 .getPath();
     }
 
-    public GraphPath pathWeighed(Location from, Location to){
-        return new BidirectionalDijkstraShortestPath<>(graph,from,to).getPath();
+    public GraphPath pathWeighted(Location from, Location to) {
+        return new BidirectionalDijkstraShortestPath<>(graph, from, to).getPath();
     }
+
 
 }

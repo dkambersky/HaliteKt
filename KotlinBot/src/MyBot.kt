@@ -123,9 +123,9 @@ fun nextMove(loc: Location): Direction {
 
 
     /* Debug */
-    val dest = Location(5, 5)
+    val dest = getBestLocation(loc)
 
-    val path = graph.pathVertex(loc, dest)
+    val path = graph.pathWeighted(loc, dest)
     val nextTile = path.vertexList[1]
 
 
@@ -186,6 +186,12 @@ fun nextMove(loc: Location): Direction {
             .format("Turn %d: [%d, %d] Couldn't come up with a move. Standing still.",
                     turnCounter, loc.x, loc.y))
     return Direction.STILL
+
+}
+
+fun  getBestLocation(loc: Location): Location {
+
+
 
 }
 
@@ -387,6 +393,7 @@ fun initMap() {
                     currentMostSector[2], currentMostSector[3],
                     currentMostSector[4], currentMostSector[5]))
 }
+
 
 
 /* Logging */
