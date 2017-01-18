@@ -124,28 +124,33 @@ fun nextMove(loc: Location): Direction {
     /* Debug */
     val dest = getBestLocation(loc)
 
-    logger.severe{ "Trying to find a path to [${dest.x},${dest.y}]" }
+    logger.severe{ "Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
 
     val path = graph.path(loc, dest)
     val nextTile = path.vertexList[1]
 
 
-    if (nextTile is Location) {
+
 
         logger.fine { ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
 
         if (gameMap.getSite(loc).strength < gameMap.getSite(nextTile).strength) return Direction.STILL
         return loc.directionTo(nextTile)
-    } else {
-        logger.fine { "NextTile isn't Location :(" }
-    }
 
-    var border = false
-    logger.fine("Calculating a move.")
+
+
+
+
 
 
     /* End debug */
 
+
+
+
+
+    var border = false
+    logger.fine("Calculating a move.")
 
     /* Detect borders */
     var highestHeurDir = Direction.STILL
@@ -191,11 +196,8 @@ fun nextMove(loc: Location): Direction {
 }
 
 fun getBestLocation(loc: Location): Location {
-    val tiles = graph.pathsToRadius(loc)
-    val tileSequence = graph.iteratorAt(loc).asSequence()
 
-
-    return tileSequence.maxBy{ tiles.getPath(it).weight } ?: Location(15,5)
+return graph.iteratorAt(loc).asSequence().maxBy { GameMap.map.getSite(it).production } ?: Location (15,5)
 
 }
 

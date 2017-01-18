@@ -57,8 +57,7 @@ public class HaliteGraph {
     }
 
     public ListSingleSourcePathsImpl pathsToRadius(Location from){
-        dijkstraRadius();
-        Logging.logger.severe("DijkstraR: %s " + dijkstraRadius);
+        // TODO not sure if dijkstraRadius is initialized correctly
 
      return (ListSingleSourcePathsImpl) dijkstraRadius().
              getPaths(from);
