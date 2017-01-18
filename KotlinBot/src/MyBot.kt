@@ -32,7 +32,7 @@ import java.util.logging.Logger
 /* Constants */
 val PROD_MULTIPLIER = 5
 val NEAREST_DIR_SEARCH_FACTOR = 1
-
+val SEARCH_RADIUS = 3
 
 /* Logging */
 val LOGGING_LEVEL: Level = Level.WARNING
@@ -84,7 +84,6 @@ fun main(args: Array<String>) {
     val startTime = System.currentTimeMillis()
 
     /* Initialization */
-    initLog()
 
     val iPackage = Networking.getInit()
     myId = iPackage.myID
@@ -125,15 +124,17 @@ fun nextMove(loc: Location): Direction {
     /* Debug */
     val dest = getBestLocation(loc)
 
-    val path = graph.pathWeighted(loc, dest)
+    logger.severe{ "Trying to find a path to [${dest.x},${dest.y}]" }
+
+    val path = graph.path(loc, dest)
     val nextTile = path.vertexList[1]
 
 
     if (nextTile is Location) {
 
-        logger.fine{ ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+        logger.fine { ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
 
-        if(gameMap.getSite(loc).strength<gameMap.getSite(nextTile).strength) return Direction.STILL
+        if (gameMap.getSite(loc).strength < gameMap.getSite(nextTile).strength) return Direction.STILL
         return loc.directionTo(nextTile)
     } else {
         logger.fine { "NextTile isn't Location :(" }
@@ -189,11 +190,15 @@ fun nextMove(loc: Location): Direction {
 
 }
 
-fun  getBestLocation(loc: Location): Location {
+fun getBestLocation(loc: Location): Location {
+    val tiles = graph.pathsToRadius(loc)
+    val tileSequence = graph.iteratorAt(loc).asSequence()
 
 
+    return tileSequence.maxBy{ tiles.getPath(it).weight } ?: Location(5,5)
 
 }
+
 
 fun nearestEnemyDir(loc: Location): Direction {
     val gameMap = gameMap!!
@@ -393,7 +398,6 @@ fun initMap() {
                     currentMostSector[2], currentMostSector[3],
                     currentMostSector[4], currentMostSector[5]))
 }
-
 
 
 /* Logging */

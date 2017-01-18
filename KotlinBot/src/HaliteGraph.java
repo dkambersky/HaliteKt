@@ -1,24 +1,30 @@
-import org.jgraph.graph.DefaultEdge;
 import org.jgrapht.GraphPath;
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.WeightedGraph;
-import org.jgrapht.alg.BidirectionalDijkstraShortestPath;
+import org.jgrapht.alg.shortestpath.BidirectionalDijkstraShortestPath;
+import org.jgrapht.alg.shortestpath.ListSingleSourcePathsImpl;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleWeightedGraph;
+import org.jgrapht.traverse.ClosestFirstIterator;
+
+import java.util.Iterator;
 
 /**
  * shutup IDEA
  * Created by David on 17/01/2017.
  */
 public class HaliteGraph {
-    UndirectedGraph graphSimple;
-    WeightedGraph graph;
-    BidirectionalDijkstraShortestPath<UndirectedGraph, DefaultEdge> dijkstraSimple;
+
+    private WeightedGraph<Location,DefaultWeightedEdge> graph;
+
+
+
+    private BidirectionalDijkstraShortestPath<Location,DefaultWeightedEdge> dijkstraWeighted;
+    private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraRadius;
 
     public HaliteGraph(GameMap map) {
 
         /* Base graph */
-        graph = new SimpleWeightedGraph<Location, DefaultWeightedEdge>(DefaultWeightedEdge.class
+        graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class
         );
 
         for (Location loc : map) {
@@ -39,7 +45,6 @@ public class HaliteGraph {
             }
         }
 
-        /* Weighed graph */
 
     }
 
@@ -47,15 +52,35 @@ public class HaliteGraph {
 
     }
 
-
-    public GraphPath pathVertex(Location from, Location to) {
-        return new BidirectionalDijkstraShortestPath<>(graphSimple, from, to)
-                .getPath();
+    public GraphPath<Location, DefaultWeightedEdge> path(Location from, Location to) {
+        return dijkstraWeighted().getPath(from,to);
     }
 
-    public GraphPath pathWeighted(Location from, Location to) {
-        return new BidirectionalDijkstraShortestPath<>(graph, from, to).getPath();
+    public ListSingleSourcePathsImpl pathsToRadius(Location from){
+        dijkstraRadius();
+        Logging.logger.severe("DijkstraR: %s " + dijkstraRadius);
+
+     return (ListSingleSourcePathsImpl) dijkstraRadius().
+             getPaths(from);
+
     }
 
+        private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraWeighted() {
+        if (dijkstraWeighted==null){
+            dijkstraWeighted = new BidirectionalDijkstraShortestPath<>(graph);
+        }
+        return dijkstraWeighted;
+    }
 
+    private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraRadius() {
+        if (dijkstraRadius==null){
+            dijkstraRadius = new BidirectionalDijkstraShortestPath<>(graph,MyBotKt.getSEARCH_RADIUS());
+        }
+        return dijkstraRadius;
+    }
+
+    public Iterator<Location> iteratorAt(Location loc){
+        return new ClosestFirstIterator<>(graph, loc,MyBotKt.getSEARCH_RADIUS());
+
+    }
 }
