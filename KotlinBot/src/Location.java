@@ -28,6 +28,33 @@ public class Location implements Iterable<Location>  {
         return new LocNeighborIterator(this);
     }
 
+
+    public Direction directionTo( Location nextTile) {
+
+        // Same column
+        if(x==nextTile.x){
+            if (y == nextTile.y)
+                return Direction.STILL;
+            if(y == nextTile.y+1 )
+                return Direction.NORTH;
+            if(y == nextTile.y-1)
+                return Direction.SOUTH;
+        }
+
+        // Same row
+        if(y == nextTile.y ){
+            if (x == nextTile.x+1)
+                return Direction.WEST;
+            if(x==nextTile.x-1)
+                return Direction.EAST;
+        }
+
+
+        Logging.logger.severe("DirectionTo found a tile not directly adjacent. Bug?");
+        return Direction.STILL;
+}
+
+
     public static class LocNeighborIterator implements Iterator<Location>{
         private Location location;
 

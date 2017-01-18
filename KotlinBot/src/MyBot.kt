@@ -125,13 +125,26 @@ fun nextMove(loc: Location): Direction {
     /* Debug */
     val dest = Location(5, 5)
 
-    val path = graph.path(loc, dest)
-    val nextTile = path.first()
-    logger.severe { ("Loc: [${loc.x},${loc.y}] path.first: $nextTile") }
+    val path = graph.pathVertex(loc, dest)
+    val nextTile = path.vertexList[1]
 
+
+    if (nextTile is Location) {
+
+        logger.fine{ ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+
+        if(gameMap.getSite(loc).strength<gameMap.getSite(nextTile).strength) return Direction.STILL
+        return loc.directionTo(nextTile)
+    } else {
+        logger.fine { "NextTile isn't Location :(" }
+    }
 
     var border = false
     logger.fine("Calculating a move.")
+
+
+    /* End debug */
+
 
     /* Detect borders */
     var highestHeurDir = Direction.STILL
