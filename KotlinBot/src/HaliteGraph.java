@@ -21,15 +21,21 @@ public class HaliteGraph {
         graphSimple = new SimpleGraph<Location, DefaultEdge>(DefaultEdge.class);
 
         for (Location loc : map) {
+            Logging.logger.severe(String.format("Adding [%d,%d] to graph", loc.x, loc.y));
             graphSimple.addVertex(loc);
         }
 
         for (Location loc : map) {
             for (Location neighbor : loc) {
+                Logging.logger.severe(String.format("Adding edge [%d,%d] - [%d,%d] to graph", loc.x, loc.y, neighbor.x, neighbor.y));
                 graphSimple.addEdge(loc, neighbor);
 
             }
         }
+    }
+
+    public HaliteGraph() {
+
     }
 
     public List path(Location from, Location to) {

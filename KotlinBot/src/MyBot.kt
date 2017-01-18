@@ -29,7 +29,6 @@ import java.util.logging.Logger
  */
 
 
-
 /* Constants */
 val PROD_MULTIPLIER = 5
 val NEAREST_DIR_SEARCH_FACTOR = 1
@@ -51,7 +50,7 @@ val SECTORS_BY_SIDE = 10
 /*
  * size of the edge of the blur applied
  */
-val  BLUR_DIMENSION = 3
+val BLUR_DIMENSION = 3
 
 /*
  * 0 desirability | 1 enemy army strength | 2 friendly power arriving
@@ -62,25 +61,22 @@ val PROCESSING_PROPERTIES = 3
 /* Globals */
 var myId = 0
 var turnCounter = 0
-var gameMap:GameMap? = null
+var gameMap: GameMap? = null
 var mode = 0
 
 /* Algorithm stuff */
-var processedMap:Array<Array<FloatArray>>? = null
-var qualityMap:Array<Array<FloatArray>>? = null
+var processedMap: Array<Array<FloatArray>>? = null
+var qualityMap: Array<Array<FloatArray>>? = null
 
 
 /* Pathfinding */
-var graph= HaliteGraph(GameMap.map)
+var graph = HaliteGraph()
 
-var regionMap:Array<Array<FloatArray>>? = null
+var regionMap: Array<Array<FloatArray>>? = null
 
 /* Logging */
-var logger:Logger = initLog()
-var turnTimes:MutableList<Int>?=null
-
-
-
+var logger: Logger = initLog()
+var turnTimes: MutableList<Int>? = null
 
 
 fun main(args: Array<String>) {
@@ -96,9 +92,10 @@ fun main(args: Array<String>) {
     val gameMap = gameMap!!
 
     initMap()
+    graph = HaliteGraph(GameMap.map)
 
     Networking.sendInit("DavKotlinBot")
-    logger.info("Initialization took ${System.currentTimeMillis()-startTime/1000} seconds.")
+    logger.info("Initialization took ${System.currentTimeMillis() - startTime / 1000} seconds.")
 
     while (true) {
         turnCounter++
@@ -117,7 +114,7 @@ fun main(args: Array<String>) {
         }
         logTurn(turnStart)
         Networking.sendFrame(moves)
-}
+    }
 }
 
 fun nextMove(loc: Location): Direction {
@@ -126,12 +123,11 @@ fun nextMove(loc: Location): Direction {
 
 
     /* Debug */
-    val dest = Location(5,5)
+    val dest = Location(5, 5)
 
-    val path = graph.path(loc,dest)
-    val nextTile = path.first() as Location
-
-
+    val path = graph.path(loc, dest)
+    val nextTile = path.first()
+    logger.severe { ("Loc: [${loc.x},${loc.y}] path.first: $nextTile") }
 
 
     var border = false
@@ -261,8 +257,8 @@ fun initMap() {
 
 
             /* Process one tile */
-            logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
-            val site = gameMap.getSite(x,y)
+            logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]" }
+            val site = gameMap.getSite(x, y)
 
             qualityMap[x][y][0] = qualityOfTile(site)
             qualityMap[x][y][1] = if (site.owner != 0 && site.owner != myId) site.strength.toFloat() else 0f
@@ -294,19 +290,19 @@ fun initMap() {
                     else
                         y + y1
 
-                    val weight:Float = if (x1 == 0 && y1 == 0)
+                    val weight: Float = if (x1 == 0 && y1 == 0)
                         1f
                     else
                         1f / (1 + Math.abs(x1) + Math
                                 .abs(y1)).toFloat()
 
 
-                    logger.finer { "Parent: [$x,$y]. Neighbor, currently accessing: [$x2,$y2]"}
+                    logger.finer { "Parent: [$x,$y]. Neighbor, currently accessing: [$x2,$y2]" }
                     sumQ += qualityMap[x2][y2][0] * weight
                     sumA += qualityMap[x2][y2][1] * weight
 
                     logger.finer(String.format("Blur: [%d,%d] considering [%d,%d] with %f.3 weight and %f.5 sumQ",
-                    										x, y, x2, y2, weight, sumQ))
+                            x, y, x2, y2, weight, sumQ))
 
                 }
             }
@@ -345,7 +341,7 @@ fun initMap() {
                 }
             }
 
-            val factor:Float = sectorEdgeX.toFloat() * sectorEdgeY.toFloat()
+            val factor: Float = sectorEdgeX.toFloat() * sectorEdgeY.toFloat()
 
             regionMap[i][j][0] = sumQ / factor
             regionMap[i][j][1] = sumA / factor
@@ -381,9 +377,9 @@ fun initMap() {
 
 
 /* Logging */
-fun initLog():Logger {
-    Logging.init( LOGFILE_PREFIX, BOT_NAME, LOGFILE_SUFFIX, LOGGING_LEVEL)
-    turnTimes = mutableListOf < Int >()
+fun initLog(): Logger {
+    Logging.init(LOGFILE_PREFIX, BOT_NAME, LOGFILE_SUFFIX, LOGGING_LEVEL)
+    turnTimes = mutableListOf <Int>()
     return Logging.logger
 }
 

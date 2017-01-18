@@ -5,6 +5,13 @@
       <element id="module-output" name="KotlinBot" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/kotlin-runtime.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/kotlin-reflect.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgraph-5.13.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgraphx-2.0.0.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgrapht-ext-1.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgrapht-core-1.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgrapht-demo-1.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/antlr4-runtime-4.5.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jgrapht-1.0.0/lib/jgrapht-ext-1.0.0-uber.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

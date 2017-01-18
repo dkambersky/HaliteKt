@@ -100,7 +100,6 @@ public class GameMap implements Iterable<Location>{
     }
 
 
-
     /* Iterator */
     public Iterator<Location> iterator(){
         return new GameMapIterator(this);
@@ -109,7 +108,7 @@ public class GameMap implements Iterable<Location>{
     public static class GameMapIterator implements Iterator<Location> {
 
         private GameMap gameMap;
-        private int i = 0;
+        private int i = -1;
 
         GameMapIterator(GameMap gameMap) {
             this.gameMap = gameMap;
@@ -124,12 +123,14 @@ public class GameMap implements Iterable<Location>{
         @Override
         public Location next() {
 
+            i++;
+
             int y = i / gameMap.width;
             int x = i % gameMap.width;
 
             if (y >= gameMap.height) throw new NoSuchElementException();
 
-            i++;
+
             return new Location(x, y);
         }
     }
