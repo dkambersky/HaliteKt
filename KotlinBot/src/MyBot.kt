@@ -195,7 +195,7 @@ fun getBestLocation(loc: Location): Location {
     val tileSequence = graph.iteratorAt(loc).asSequence()
 
 
-    return tileSequence.maxBy{ tiles.getPath(it).weight } ?: Location(5,5)
+    return tileSequence.maxBy{ tiles.getPath(it).weight } ?: Location(15,5)
 
 }
 
