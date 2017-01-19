@@ -8,6 +8,7 @@ public class Logging {
     public static FileHandler handler;
 
 
+
     public static void init(String LOGFILE_PREFIX, String BOT_NAME, String LOGFILE_SUFFIX, Level LOGGING_LEVEL) {
         try {
             logger = Logger.getLogger(BOT_NAME);

@@ -31,6 +31,9 @@ public class Location implements Iterable<Location>  {
 
     public Direction directionTo( Location nextTile) {
 
+
+
+
         // Same column
         if(x==nextTile.x){
             if (y == nextTile.y)
@@ -39,6 +42,15 @@ public class Location implements Iterable<Location>  {
                 return Direction.NORTH;
             if(y == nextTile.y-1)
                 return Direction.SOUTH;
+
+            /* Edges */
+            if(y==0 && nextTile.y==GameMap.map.height-1)
+                return Direction.NORTH;
+
+            if(nextTile.y==0 && y==GameMap.map.height-1)
+                return Direction.SOUTH;
+
+
         }
 
         // Same row
@@ -47,7 +59,18 @@ public class Location implements Iterable<Location>  {
                 return Direction.WEST;
             if(x==nextTile.x-1)
                 return Direction.EAST;
+
+            /* Edge (hehe) cases */
+            if(x==0 && nextTile.x==GameMap.map.width-1)
+                return Direction.WEST;
+
+            if(nextTile.x==0 && x==GameMap.map.width-1)
+                return Direction.EAST;
+
         }
+
+
+
 
 
         Logging.logger.severe("DirectionTo found a tile not directly adjacent. Bug?");
@@ -88,6 +111,11 @@ public class Location implements Iterable<Location>  {
     @Override
     public boolean equals(Object obj){
         return (obj instanceof Location && ((Location) obj).no == no);
+    }
+
+    public float getWeight(){
+        Site site = GameMap.map.getSite(this);
+        return (float)site.strength/(float)site.production;
     }
 
 }

@@ -30,9 +30,9 @@ import java.util.logging.Logger
 
 
 /* Constants */
-val PROD_MULTIPLIER = 5
+val PROD_MULTIPLIER = 4 // because of <=, I'm setting it at 1 less than required
 val NEAREST_DIR_SEARCH_FACTOR = 1
-
+val SEARCH_RADIUS = 5
 
 /* Logging */
 val LOGGING_LEVEL: Level = Level.WARNING
@@ -84,7 +84,6 @@ fun main(args: Array<String>) {
     val startTime = System.currentTimeMillis()
 
     /* Initialization */
-    initLog()
 
     val iPackage = Networking.getInit()
     myId = iPackage.myID
@@ -122,29 +121,43 @@ fun nextMove(loc: Location): Direction {
     val site = gameMap.getSite(loc)
 
 
+
+    /* No-brainers */
+    if(site.strength<=site.production*PROD_MULTIPLIER) return Direction.STILL
+
+
     /* Debug */
-    val dest = Location(5, 5)
+    val dest = getBestLocation(loc) ?: Location(-1,-1)
+    if(dest.x==-1) return Direction.NORTH
 
-    val path = graph.pathVertex(loc, dest)
+    logger.severe{ "$turnCounter | Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
+
+    val path = graph.path(loc, dest)
     val nextTile = path.vertexList[1]
+    val nextSite = gameMap.getSite(nextTile)
 
 
-    if (nextTile is Location) {
 
-        logger.fine{ ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
 
-        if(gameMap.getSite(loc).strength<gameMap.getSite(nextTile).strength) return Direction.STILL
+        logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+
+        if (site.strength < nextSite.strength && nextSite.owner == 0) return Direction.STILL
         return loc.directionTo(nextTile)
-    } else {
-        logger.fine { "NextTile isn't Location :(" }
-    }
 
-    var border = false
-    logger.fine("Calculating a move.")
+
+
+
+
 
 
     /* End debug */
 
+
+
+
+
+    var border = false
+    logger.fine("Calculating a move.")
 
     /* Detect borders */
     var highestHeurDir = Direction.STILL
@@ -188,6 +201,14 @@ fun nextMove(loc: Location): Direction {
     return Direction.STILL
 
 }
+
+
+fun getBestLocation(loc: Location): Location? {
+
+return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
+
+}
+
 
 fun nearestEnemyDir(loc: Location): Direction {
     val gameMap = gameMap!!
