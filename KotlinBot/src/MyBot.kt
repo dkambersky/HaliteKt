@@ -1,8 +1,5 @@
-import java.io.IOException
-import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
-import java.util.logging.SimpleFormatter
 
 
 /**
@@ -17,24 +14,25 @@ import java.util.logging.SimpleFormatter
  *
  *  SIMPLE
  *   - prevent str loss to cap
+ *   - tunnel to high prod places
  *
  *  INTERMEDIATE
  *   - move strength where it's needed
  *   - attacking through combining cells
+ *   - avoid opening new lanes
  *
  *  LARGE, FUNDAMENTAL
  *   - move towards high prod, low str stuff
  *   - map analysis
- *	  - A* / Dijtskra (BFS??)
+ *	  - A* / Dijkstra
  *
  */
 
 
-
 /* Constants */
-val PROD_MULTIPLIER = 5
+val PROD_MULTIPLIER = 4 // because of <=, I'm setting it at 1 less than required
 val NEAREST_DIR_SEARCH_FACTOR = 1
-
+val SEARCH_RADIUS = 5
 
 /* Logging */
 val LOGGING_LEVEL: Level = Level.WARNING
@@ -52,7 +50,7 @@ val SECTORS_BY_SIDE = 10
 /*
  * size of the edge of the blur applied
  */
-val  BLUR_DIMENSION = 3
+val BLUR_DIMENSION = 3
 
 /*
  * 0 desirability | 1 enemy army strength | 2 friendly power arriving
@@ -63,18 +61,22 @@ val PROCESSING_PROPERTIES = 3
 /* Globals */
 var myId = 0
 var turnCounter = 0
-var gameMap:GameMap? = null
+var gameMap: GameMap? = null
 var mode = 0
 
 /* Algorithm stuff */
-var processedMap:Array<Array<FloatArray>>? = null
-var qualityMap:Array<Array<FloatArray>>? = null
-var regionMap:Array<Array<FloatArray>>? = null
+var processedMap: Array<Array<FloatArray>>? = null
+var qualityMap: Array<Array<FloatArray>>? = null
+
+
+/* Pathfinding */
+var graph = HaliteGraph()
+
+var regionMap: Array<Array<FloatArray>>? = null
 
 /* Logging */
-val logger:Logger = Logger.getLogger(BOT_NAME)
-var handler:FileHandler? = null
-var turnTimes:MutableList<Int>?=null
+var logger: Logger = initLog()
+var turnTimes: MutableList<Int>? = null
 
 
 fun main(args: Array<String>) {
@@ -82,7 +84,6 @@ fun main(args: Array<String>) {
     val startTime = System.currentTimeMillis()
 
     /* Initialization */
-    initLog()
 
     val iPackage = Networking.getInit()
     myId = iPackage.myID
@@ -90,11 +91,10 @@ fun main(args: Array<String>) {
     val gameMap = gameMap!!
 
     initMap()
+    graph = HaliteGraph(GameMap.map)
 
     Networking.sendInit("DavKotlinBot")
-    logger.info("Initialization took ${System.currentTimeMillis()-startTime/1000} seconds.")
-
-
+    logger.info("Initialization took ${System.currentTimeMillis() - startTime / 1000} seconds.")
 
     while (true) {
         turnCounter++
@@ -103,22 +103,57 @@ fun main(args: Array<String>) {
         val moves = mutableListOf<Move>()
         Networking.updateFrame(gameMap)
 
-        for (y in 0..gameMap.height-1) {
-            for (x in 0..gameMap.width-1) {
+        for (y in 0 until gameMap.height) {
+            for (x in 0 until gameMap.width) {
                 val location = gameMap.getLocation(x, y)
-                val site = location.site
+                val site = gameMap.getSite(location)
 
                 if (site.owner == myId) moves.add(Move(location, nextMove(location)))
             }
         }
         logTurn(turnStart)
         Networking.sendFrame(moves)
-}
+    }
 }
 
 fun nextMove(loc: Location): Direction {
     val gameMap = gameMap!!
     val site = gameMap.getSite(loc)
+
+
+
+    /* No-brainers */
+    if(site.strength<=site.production*PROD_MULTIPLIER) return Direction.STILL
+
+
+    /* Debug */
+    val dest = getBestLocation(loc) ?: Location(-1,-1)
+    if(dest.x==-1) return Direction.NORTH
+
+    logger.severe{ "$turnCounter | Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
+
+    val path = graph.path(loc, dest)
+    val nextTile = path.vertexList[1]
+    val nextSite = gameMap.getSite(nextTile)
+
+
+
+
+        logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+
+        if (site.strength < nextSite.strength && nextSite.owner == 0) return Direction.STILL
+        return loc.directionTo(nextTile)
+
+
+
+
+
+
+
+    /* End debug */
+
+
+
 
 
     var border = false
@@ -166,6 +201,14 @@ fun nextMove(loc: Location): Direction {
     return Direction.STILL
 
 }
+
+
+fun getBestLocation(loc: Location): Location? {
+
+return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
+
+}
+
 
 fun nearestEnemyDir(loc: Location): Direction {
     val gameMap = gameMap!!
@@ -222,6 +265,7 @@ fun heuristic(loc: Location): Float {
     logger.fine(String.format(
             "Player tile: [%d, %d] prod: %d str: %d. damage: %d", loc.x,
             loc.y, site.production, site.strength, totalDamage))
+
     return totalDamage.toFloat()
 
 }
@@ -247,8 +291,8 @@ fun initMap() {
 
 
             /* Process one tile */
-            logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]"}
-            val site = gameMap.getLocation(x, y).site
+            logger.finer { "Map dimensions [${gameMap.width}, ${gameMap.height}] Currently processingX [$x,$y]" }
+            val site = gameMap.getSite(x, y)
 
             qualityMap[x][y][0] = qualityOfTile(site)
             qualityMap[x][y][1] = if (site.owner != 0 && site.owner != myId) site.strength.toFloat() else 0f
@@ -280,19 +324,19 @@ fun initMap() {
                     else
                         y + y1
 
-                    val weight:Float = if (x1 == 0 && y1 == 0)
+                    val weight: Float = if (x1 == 0 && y1 == 0)
                         1f
                     else
                         1f / (1 + Math.abs(x1) + Math
                                 .abs(y1)).toFloat()
 
 
-                    logger.finer { "Parent: [$x,$y]. Neighbor, currently accessing: [$x2,$y2]"}
+                    logger.finer { "Parent: [$x,$y]. Neighbor, currently accessing: [$x2,$y2]" }
                     sumQ += qualityMap[x2][y2][0] * weight
                     sumA += qualityMap[x2][y2][1] * weight
 
                     logger.finer(String.format("Blur: [%d,%d] considering [%d,%d] with %f.3 weight and %f.5 sumQ",
-                    										x, y, x2, y2, weight, sumQ))
+                            x, y, x2, y2, weight, sumQ))
 
                 }
             }
@@ -331,7 +375,7 @@ fun initMap() {
                 }
             }
 
-            val factor:Float = sectorEdgeX.toFloat() * sectorEdgeY.toFloat()
+            val factor: Float = sectorEdgeX.toFloat() * sectorEdgeY.toFloat()
 
             regionMap[i][j][0] = sumQ / factor
             regionMap[i][j][1] = sumA / factor
@@ -367,22 +411,10 @@ fun initMap() {
 
 
 /* Logging */
-fun initLog() = try {
-    logger.useParentHandlers = false
-    handler = FileHandler(String.format("%s%s - %d%s",
-            LOGFILE_PREFIX, BOT_NAME,
-            System.currentTimeMillis() / 1000, LOGFILE_SUFFIX))
-    logger.addHandler(handler)
-    val formatter = SimpleFormatter()
-    (handler as FileHandler).formatter = formatter
-    logger.level = LOGGING_LEVEL
-    logger.info("Link starto!")
-
-    turnTimes = mutableListOf<Int>()
-} catch (e:SecurityException) {
-    e.printStackTrace()
-} catch (e:IOException) {
-    e.printStackTrace()
+fun initLog(): Logger {
+    Logging.init(LOGFILE_PREFIX, BOT_NAME, LOGFILE_SUFFIX, LOGGING_LEVEL)
+    turnTimes = mutableListOf <Int>()
+    return Logging.logger
 }
 
 private fun logTurn(startTime: Long) {

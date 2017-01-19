@@ -1,9 +1,3 @@
-import java.net.*;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Scanner;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.List;
 
 public class Networking {
@@ -54,7 +48,7 @@ public class Networking {
             currentIndex += 2;
             for (int a = 0; a < counter; a++) {
 
-                map.getLocation(x,y).getSite().owner = owner;
+                map.getSite(x,y).owner = owner;
                 ++x;
                 if(x == map.width) {
                     x = 0;
@@ -67,7 +61,7 @@ public class Networking {
             for (int a = 0; a < map.width; a++) {
                 int strengthInt = Integer.parseInt(inputStringComponents[currentIndex]);
                 currentIndex++;
-                map.getLocation(a,b).getSite().strength = strengthInt;
+                map.getSite(a,b).strength = strengthInt;
             }
         }
 
@@ -101,7 +95,7 @@ public class Networking {
     static InitPackage getInit() {
 
         InitPackage initPackage = new InitPackage();
-        initPackage.myID = (int)Integer.parseInt(getString());
+        initPackage.myID = Integer.parseInt(getString());
 
         // Deserialize width and height:
         final String[] inputStringComponents = getString().split(" ");
