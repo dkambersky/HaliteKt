@@ -30,9 +30,9 @@ import java.util.logging.Logger
 
 
 /* Constants */
-val PROD_MULTIPLIER = 5
+val PROD_MULTIPLIER = 4 // because of <=, I'm setting it at 1 less than required
 val NEAREST_DIR_SEARCH_FACTOR = 1
-val SEARCH_RADIUS = 3
+val SEARCH_RADIUS = 5
 
 /* Logging */
 val LOGGING_LEVEL: Level = Level.WARNING
@@ -121,20 +121,27 @@ fun nextMove(loc: Location): Direction {
     val site = gameMap.getSite(loc)
 
 
-    /* Debug */
-    val dest = getBestLocation(loc)
 
-    logger.severe{ "Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
+    /* No-brainers */
+    if(site.strength<=site.production*PROD_MULTIPLIER) return Direction.STILL
+
+
+    /* Debug */
+    val dest = getBestLocation(loc) ?: Location(-1,-1)
+    if(dest.x==-1) return Direction.NORTH
+
+    logger.severe{ "$turnCounter | Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
 
     val path = graph.path(loc, dest)
     val nextTile = path.vertexList[1]
+    val nextSite = gameMap.getSite(nextTile)
 
 
 
 
-        logger.fine { ("Turn ${turnCounter} | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+        logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
 
-        if (gameMap.getSite(loc).strength < gameMap.getSite(nextTile).strength) return Direction.STILL
+        if (site.strength < nextSite.strength && nextSite.owner == 0) return Direction.STILL
         return loc.directionTo(nextTile)
 
 
@@ -195,9 +202,10 @@ fun nextMove(loc: Location): Direction {
 
 }
 
-fun getBestLocation(loc: Location): Location {
 
-return graph.iteratorAt(loc).asSequence().maxBy { GameMap.map.getSite(it).production } ?: Location (15,5)
+fun getBestLocation(loc: Location): Location? {
+
+return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
 
 }
 
