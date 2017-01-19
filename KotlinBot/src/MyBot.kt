@@ -311,7 +311,7 @@ fun detectBorder(loc: Location): TileLocation {
     for(neighbor in loc) {
         val nSite = gameMap!!.getSite(neighbor)
         if (nSite.owner != myId) {
-            border = true;
+            border = true
             if (nSite.strength == 0) {
                 // TODO 0 str neutrals not warzones
                 return TileLocation.WARZONE
