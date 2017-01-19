@@ -28,6 +28,32 @@ import java.util.logging.Logger
  *
  */
 
+/* V2 STATUS
+
+Things that work:
+ - dijkstra's
+ - tunneling to high prod places
+
+Things that need work
+ - *slow starts*
+ - combat
+
+Interesting details
+
+ - overall: tweak heuristics for dijkstra's!!
+
+ - expansion: combine cells to attack [might not be a net positive change]
+ - expansion: decide when it's worth to tunnel and when we should expand
+
+ - combat: avoid new lanes
+ - combat: move to important locations
+ - combat: avoid str loss to cap [low prio]
+
+
+
+ */
+
+
 
 /* Constants */
 val PROD_MULTIPLIER = 4 // because of <=, I'm setting it at 1 less than required
@@ -62,7 +88,7 @@ val PROCESSING_PROPERTIES = 3
 var myId = 0
 var turnCounter = 0
 var gameMap: GameMap? = null
-var mode = 0
+var state = GameState.INITIAL
 
 /* Algorithm stuff */
 var processedMap: Array<Array<FloatArray>>? = null
@@ -120,10 +146,95 @@ fun nextMove(loc: Location): Direction {
     val gameMap = gameMap!!
     val site = gameMap.getSite(loc)
 
+    val location = detectBorder(loc)
+
+when(state){
+
+    /* Early game, expanding
+     * TODO figure out diff between initial/expanding
+     */
+    GameState.INITIAL,
+    GameState.EXPANDING -> {
+        when(location){
+            TileLocation.BORDER ->{
+                /* Early game, exansion, on the border */
+
+            }
+
+            TileLocation.INNER -> {
+                /* Early game, expansion, inner cell */
+
+            }
+
+            TileLocation.WARZONE -> {
+                /* Encountered an enemy for the first time! */
+                toggleState(GameState.COMBAT)
 
 
-    /* No-brainers */
+            }
+
+        }
+
+
+
+    }
+
+    /* We're fighting players */
+    GameState.COMBAT -> {
+        when (location){
+            TileLocation.INNER -> {
+                /* Send reinforcements */
+
+            }
+
+            TileLocation.BORDER -> {
+                /* Send reinforcements or expand
+                 * TODO figure out when to prioritize what
+                 */
+
+
+            }
+
+            TileLocation.WARZONE -> {
+                /* FIGHT! */
+
+            }
+        }
+    }
+}
+
+
+    /* OLD StUFF*/
+
+    /* No-brainers - wait for production, don't move 0 strength tiles */
     if(site.strength<=site.production*PROD_MULTIPLIER) return Direction.STILL
+
+    /* Combat */
+    var isOnBorder = false
+    var isOnEnemyBorder = false
+
+
+
+    /* Fight if required */
+    if(isOnBorder){
+    if(isOnEnemyBorder) {
+
+        val bestTarget:Location? = loc.maxBy(::heuristic)
+        toggleState(GameState.COMBAT)
+
+        return loc.directionTo(bestTarget)
+    }
+        /* Capturing neutral territory*/
+        if(state!=GameState.COMBAT) {
+            val bestTarget: Location? = loc.maxBy(::heuristic)
+
+            if(site.strength>gameMap.getSite(bestTarget).strength)
+            return loc.directionTo(bestTarget)
+        }
+
+    }
+
+
 
 
     /* Debug */
@@ -135,9 +246,6 @@ fun nextMove(loc: Location): Direction {
     val path = graph.path(loc, dest)
     val nextTile = path.vertexList[1]
     val nextSite = gameMap.getSite(nextTile)
-
-
-
 
         logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
 
@@ -156,15 +264,14 @@ fun nextMove(loc: Location): Direction {
 
 
 
-    var border = false
-    logger.fine("Calculating a move.")
-
     /* Detect borders */
     var highestHeurDir = Direction.STILL
+    val border = false
 
     for (dir in Direction.CARDINALS) {
         val neighLoc = gameMap.getLocation(loc, dir)
         val neighbor = gameMap.getSite(neighLoc)
+
 
         if (neighbor.owner != myId) {
             border = true
@@ -186,9 +293,6 @@ fun nextMove(loc: Location): Direction {
     if (border && gameMap.getSite(loc, highestHeurDir).strength < site.strength)
         return highestHeurDir
 
-    /* Wait for production */
-    if (site.strength < site.production * PROD_MULTIPLIER || site.production == 0)
-        return Direction.STILL
 
     /* If inside and not producing, move */
     if (!border)
@@ -202,13 +306,27 @@ fun nextMove(loc: Location): Direction {
 
 }
 
+fun detectBorder(loc: Location): TileLocation {
+    var border = false
+    for(neighbor in loc) {
+        val nSite = gameMap!!.getSite(neighbor)
+        if (nSite.owner != myId) {
+            border = true;
+            if (nSite.strength == 0) {
+                // TODO 0 str neutrals not warzones
+                return TileLocation.WARZONE
+            }
+        }
+    }
+    if (border) return TileLocation.BORDER
+    return TileLocation.INNER
+}
 
 fun getBestLocation(loc: Location): Location? {
 
 return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
 
 }
-
 
 fun nearestEnemyDir(loc: Location): Direction {
     val gameMap = gameMap!!
@@ -260,7 +378,7 @@ fun heuristic(loc: Location): Float {
     val totalDamage = Direction.CARDINALS
             .map { gameMap.getSite(loc, it) }
             .filter { it.owner != 0 && it.owner != myId }
-            .sumBy { it.strength }
+            .sumBy(Site::strength)
 
     logger.fine(String.format(
             "Player tile: [%d, %d] prod: %d str: %d. damage: %d", loc.x,
@@ -270,6 +388,8 @@ fun heuristic(loc: Location): Float {
 
 }
 
+
+/* Should only be used for initial analysis */
 fun qualityOfTile(site: Site): Float {
     return (if (site.strength == 0)
         site.production / site.strength
@@ -409,6 +529,14 @@ fun initMap() {
                     currentMostSector[4], currentMostSector[5]))
 }
 
+fun  toggleState(gameState: GameState) {
+    if(gameState==state) return
+
+    logger.severe {"Turn $turnCounter: Switching from state $state to $gameState. "}
+    state = gameState
+    //TODO state logic
+}
+
 
 /* Logging */
 fun initLog(): Logger {
@@ -433,3 +561,6 @@ private fun logTurn(startTime: Long) {
     }
 
 }
+
+
+
