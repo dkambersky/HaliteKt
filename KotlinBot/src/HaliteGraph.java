@@ -4,6 +4,7 @@ import org.jgrapht.alg.shortestpath.BidirectionalDijkstraShortestPath;
 import org.jgrapht.alg.shortestpath.ListSingleSourcePathsImpl;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleWeightedGraph;
+import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.ClosestFirstIterator;
 
 import java.util.Iterator;
@@ -81,5 +82,9 @@ public class HaliteGraph {
     public Iterator<Location> iteratorAt(Location loc){
         return new ClosestFirstIterator<>(graph, loc,MyBotKt.getSEARCH_RADIUS());
 
+    }
+
+    public Iterator<Location> iteratorBFS(Location loc ){
+        return new BreadthFirstIterator<>(graph,loc);
     }
 }

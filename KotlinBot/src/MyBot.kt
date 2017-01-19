@@ -54,7 +54,6 @@ Interesting details
  */
 
 
-
 /* Constants */
 val PROD_MULTIPLIER = 4 // because of <=, I'm setting it at 1 less than required
 val NEAREST_DIR_SEARCH_FACTOR = 1
@@ -123,6 +122,7 @@ fun main(args: Array<String>) {
     logger.info("Initialization took ${System.currentTimeMillis() - startTime / 1000} seconds.")
 
     while (true) {
+
         turnCounter++
         val turnStart = System.currentTimeMillis()
 
@@ -148,173 +148,125 @@ fun nextMove(loc: Location): Direction {
 
     val location = detectBorder(loc)
 
-when(state){
+
+    /* Don't move, ever, with 0 str */
+    if (site.strength == 0) return Direction.STILL
+
+
+    /* Main logic loop */
+    when (state) {
 
     /* Early game, expanding
      * TODO figure out diff between initial/expanding
      */
-    GameState.INITIAL,
-    GameState.EXPANDING -> {
-        when(location){
-            TileLocation.BORDER ->{
-                /* Early game, exansion, on the border */
+        GameState.INITIAL,
+        GameState.EXPANDING -> {
+            logger.info { "Cell [${loc.x},${loc.y}]. Initial state, location: $location" }
+            when (location) {
+                TileLocation.BORDER -> {
+                    /* Early game, expansion, on the border */
+
+                    val dest = getBestLocation(loc) ?: Location(-1, -1)
+                    if (dest.x == -1) return Direction.NORTH //TODO what happens when BestLocation finds nothing?
+
+                    logger.severe { "$turnCounter | Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
+
+                    val path = graph.path(loc, dest)
+                    val nextTile = path.vertexList[1]
+
+
+                    logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
+
+
+                    if (site.strength >= gameMap.getSite(nextTile).strength)
+                        return loc.directionTo(nextTile)
+
+                }
+
+                TileLocation.INNER -> {
+                    /* Early game, expansion, inner cell */
+                    return nearestNeutralDirNaive(loc)
+                }
+
+                TileLocation.WARZONE -> {
+                    /* Encountered an enemy for the first time! */
+                    toggleState(GameState.COMBAT)
+
+                    /* Go by overkill heuristic for now */
+                    return loc.directionTo(loc.maxBy(::heuristic))
+
+                }
 
             }
 
-            TileLocation.INNER -> {
-                /* Early game, expansion, inner cell */
-
-            }
-
-            TileLocation.WARZONE -> {
-                /* Encountered an enemy for the first time! */
-                toggleState(GameState.COMBAT)
-
-
-            }
 
         }
-
-
-
-    }
 
     /* We're fighting players */
-    GameState.COMBAT -> {
-        when (location){
-            TileLocation.INNER -> {
-                /* Send reinforcements */
+        GameState.COMBAT -> {
+            logger.severe { "Cell [${loc.x},${loc.y}]. Combat state, location: $location" }
+            when (location) {
+                TileLocation.INNER -> {
+                    /* Send reinforcements */
 
-            }
+                }
 
-            TileLocation.BORDER -> {
-                /* Send reinforcements or expand
-                 * TODO figure out when to prioritize what
-                 */
+                TileLocation.BORDER -> {
+                    /* Send reinforcements or expand
+                     * TODO figure out when to prioritize what
+                     */
 
 
-            }
+                }
 
-            TileLocation.WARZONE -> {
-                /* FIGHT! */
+                TileLocation.WARZONE -> {
+                    /* FIGHT! */
 
+                    /* Go by overkill heuristic for now */
+                    return loc.directionTo(loc.maxBy(::heuristic))
+
+
+                }
             }
         }
     }
-}
 
-
-    /* OLD StUFF*/
-
-    /* No-brainers - wait for production, don't move 0 strength tiles */
-    if(site.strength<=site.production*PROD_MULTIPLIER) return Direction.STILL
-
-    /* Combat */
-    var isOnBorder = false
-    var isOnEnemyBorder = false
-
-
-
-    /* Fight if required */
-    if(isOnBorder){
-    if(isOnEnemyBorder) {
-
-        val bestTarget:Location? = loc.maxBy(::heuristic)
-        toggleState(GameState.COMBAT)
-
-        return loc.directionTo(bestTarget)
-    }
-        /* Capturing neutral territory*/
-        if(state!=GameState.COMBAT) {
-            val bestTarget: Location? = loc.maxBy(::heuristic)
-
-            if(site.strength>gameMap.getSite(bestTarget).strength)
-            return loc.directionTo(bestTarget)
-        }
-
-    }
-
-
-
-
-    /* Debug */
-    val dest = getBestLocation(loc) ?: Location(-1,-1)
-    if(dest.x==-1) return Direction.NORTH
-
-    logger.severe{ "$turnCounter | Tile: [${loc.x}, ${loc.y}]  Dest : [${dest.x},${dest.y}]" }
-
-    val path = graph.path(loc, dest)
-    val nextTile = path.vertexList[1]
-    val nextSite = gameMap.getSite(nextTile)
-
-        logger.fine { ("Turn $turnCounter | Loc: [${loc.x},${loc.y}] path.first: ${nextTile.x},${nextTile.y}") }
-
-        if (site.strength < nextSite.strength && nextSite.owner == 0) return Direction.STILL
-        return loc.directionTo(nextTile)
-
-
-
-
-
-
-
-    /* End debug */
-
-
-
-
-
-    /* Detect borders */
-    var highestHeurDir = Direction.STILL
-    val border = false
-
-    for (dir in Direction.CARDINALS) {
-        val neighLoc = gameMap.getLocation(loc, dir)
-        val neighbor = gameMap.getSite(neighLoc)
-
-
-        if (neighbor.owner != myId) {
-            border = true
-
-            /* Initialize highest prod neighbor */
-            if (highestHeurDir == Direction.STILL)
-                highestHeurDir = dir
-
-            /* Note higher production neighbors */
-            if (heuristic(neighLoc) > heuristic(gameMap.getLocation(loc,
-                    highestHeurDir)))
-                highestHeurDir = dir
-
-        }
-    }
-
-
-    /* Attack weaker neighbours */
-    if (border && gameMap.getSite(loc, highestHeurDir).strength < site.strength)
-        return highestHeurDir
-
-
-    /* If inside and not producing, move */
-    if (!border)
-        return nearestEnemyDir(loc)
 
     /* Fail-safe */
     logger.warning(String
-            .format("Turn %d: [%d, %d] Couldn't come up with a move. Standing still.",
+            .format("Turn $turnCounter: [${loc.x}, ${loc.y}] Couldn't come up with a move. Standing still.",
                     turnCounter, loc.x, loc.y))
     return Direction.STILL
 
 }
 
+fun toggleState(gameState: GameState) {
+    logger.severe { "Turn $turnCounter: Before switching from state $state to $gameState. " }
+    if (gameState == state) {
+        return
+    }
+
+    logger.severe { "Turn $turnCounter: Switching from state $state to $gameState. " }
+    state = gameState
+    //TODO state logic
+}
+
 fun detectBorder(loc: Location): TileLocation {
     var border = false
-    for(neighbor in loc) {
+
+
+    for (neighbor in loc) {
         val nSite = gameMap!!.getSite(neighbor)
         if (nSite.owner != myId) {
             border = true
             if (nSite.strength == 0) {
-                // TODO 0 str neutrals not warzones
-                return TileLocation.WARZONE
+
+                val isWarzone = Direction.CARDINALS
+                        .map { gameMap!!.getSite(neighbor, it).owner }
+                        .any { it != myId && it != 0 }
+
+                if (isWarzone)
+                    return TileLocation.WARZONE
             }
         }
     }
@@ -324,7 +276,7 @@ fun detectBorder(loc: Location): TileLocation {
 
 fun getBestLocation(loc: Location): Location? {
 
-return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
+    return graph.iteratorAt(loc).asSequence().filter { GameMap.map.getSite(it).owner != myId }.maxBy { GameMap.map.getSite(it).production }
 
 }
 
@@ -333,28 +285,88 @@ fun nearestEnemyDir(loc: Location): Direction {
     var dir = Direction.STILL
 
 
-    var maxDistance = Math.min(gameMap.width, gameMap.height) / NEAREST_DIR_SEARCH_FACTOR
-
-    for (d in Direction.CARDINALS) {
-        var distance = 0
-        var current = loc
-        var site = gameMap.getSite(loc)
-
-        while (site.owner == myId && distance < maxDistance) {
-            distance++
-            current = gameMap.getLocation(current, d)
-            site = gameMap.getSite(current)
-        }
-
-        if (distance < maxDistance) {
-            dir = d
-            maxDistance = distance
-        }
+    for (candidate in graph.iteratorBFS(loc)) {
+        if (gameMap.getSite(loc).owner != myId && gameMap.getSite(loc).owner != 0)
+            return loc.directionTo(graph.path(candidate, loc).vertexList[1])
     }
+
 
     if (dir == Direction.STILL)
         logger.warning(String.format(
                 "Turn %d: [%d,%d] nearestEnemyDir returned STILL! ",
+                turnCounter, loc.x, loc.y))
+
+    return dir
+}
+
+
+fun nearestNeutralDirNaive(loc: Location): Direction {
+    val gameMap = gameMap!!
+
+    var maxDistance = Math.min(gameMap.width, gameMap.height) / NEAREST_DIR_SEARCH_FACTOR
+    for (i in 1..maxDistance) {
+
+        /* Cardinals */
+        logger.severe { "Displacing $loc by $i." }
+        Direction.CARDINALS
+                .filter {  gameMap.getSite(loc, it, i).owner != myId }
+                .forEach { return it }
+
+
+        /* Diagonals */
+        logger.severe { "Diagonals $loc by $i." }
+        if(i % 2 ==0){
+            for(dir in 1..12){
+                val locDiagonal = when(dir) {
+                    1 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.NORTH, i), Direction.EAST, i / 2)
+                    2 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.NORTH, i), Direction.WEST, i / 2)
+                    3 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.EAST, i), Direction.NORTH, i / 2)
+                    4 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.EAST, i), Direction.SOUTH, i / 2)
+                    5 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.SOUTH, i), Direction.EAST, i / 2)
+                    6 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.SOUTH, i), Direction.WEST, i / 2)
+                    7 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.WEST, i), Direction.NORTH, i / 2)
+                    8 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.WEST, i), Direction.SOUTH, i / 2)
+                    9 -> gameMap.getLocation(gameMap.getLocation(loc, Direction.NORTH, i), Direction.EAST, i )
+                    10-> gameMap.getLocation(gameMap.getLocation(loc, Direction.SOUTH, i), Direction.EAST, i )
+                    11-> gameMap.getLocation(gameMap.getLocation(loc, Direction.SOUTH, i), Direction.WEST, i )
+                    12-> gameMap.getLocation(gameMap.getLocation(loc, Direction.NORTH, i), Direction.WEST, i )
+                    else -> throw IllegalArgumentException("Weird diagonal naive search thing happened.")
+                }
+
+                if(gameMap.getSite(locDiagonal).owner!=myId)  return when(dir){
+                    1,2,9 -> Direction.NORTH
+                    3,4,10 -> Direction.EAST
+                    5,6,11 -> Direction.SOUTH
+                    7,8,12 -> Direction.WEST
+                    //TODO make diagonals smarter
+                    else -> throw IllegalArgumentException("What the hell happened here?")
+
+                }
+
+            }
+        }
+    }
+
+    logger.severe { "Neutral dir naive search returned STILL for [${loc.x},${loc.y}]" }
+    return Direction.STILL
+}
+
+fun nearestNeutralDir(loc: Location): Direction {
+    val gameMap = gameMap!!
+    var dir = Direction.STILL
+
+
+    for (candidate in graph.iteratorBFS(loc)) {
+        if (gameMap.getSite(candidate).owner != myId) {
+            logger.severe { "Found a NearestNeutral! from: [${loc.x},${loc.y}] to [${candidate.x},${candidate.y}]." }
+            return loc.directionTo(graph.path(candidate, loc).vertexList[1])
+        }
+    }
+
+
+    if (dir == Direction.STILL)
+        logger.warning(String.format(
+                "Turn %d: [%d,%d] nearestNeutralDir returned STILL! ",
                 turnCounter, loc.x, loc.y))
 
     return dir
@@ -529,14 +541,6 @@ fun initMap() {
                     currentMostSector[4], currentMostSector[5]))
 }
 
-fun  toggleState(gameState: GameState) {
-    if(gameState==state) return
-
-    logger.severe {"Turn $turnCounter: Switching from state $state to $gameState. "}
-    state = gameState
-    //TODO state logic
-}
-
 
 /* Logging */
 fun initLog(): Logger {
@@ -548,7 +552,7 @@ fun initLog(): Logger {
 private fun logTurn(startTime: Long) {
     val turnTimes = turnTimes!!
     turnTimes.add((System.currentTimeMillis() - startTime).toInt())
-
+    logger.severe { "---------------------------------------TURN $turnCounter. Final state: $state" }
     /* Every 50 turns, display detailed output */
     if (turnCounter % 50 === 0) {
         val logMsg = StringBuilder()

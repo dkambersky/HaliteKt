@@ -73,7 +73,7 @@ public class Location implements Iterable<Location>  {
 
 
 
-        Logging.logger.severe("DirectionTo found a tile not directly adjacent. Bug?");
+        Logging.logger.severe(String.format("DirectionTo from [%d, %d] to [%d,%d] found a tile not directly adjacent. Bug?",x,y,nextTile.x,nextTile.y ));
         return Direction.STILL;
 }
 
@@ -111,6 +111,10 @@ public class Location implements Iterable<Location>  {
     @Override
     public boolean equals(Object obj){
         return (obj instanceof Location && ((Location) obj).no == no);
+    }
+
+    public String toString(){
+        return String.format("[%d, %d]", x, y);
     }
 
     public float getWeight(){

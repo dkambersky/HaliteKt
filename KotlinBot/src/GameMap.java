@@ -3,8 +3,8 @@ import java.util.NoSuchElementException;
 
 public class GameMap implements Iterable<Location>{
 
-    private final Site[][] contents;
-    private final Location[][] locations;
+    public final Site[][] contents;
+    public final Location[][] locations;
     public final int width, height;
     public static GameMap map;
 
@@ -72,8 +72,58 @@ public class GameMap implements Iterable<Location>{
         }
     }
 
+    public Location getLocation(Location location, Direction direction, int displacement)  {
+        if(displacement>24){
+        Logging.logger.severe( String.format("Displacing %s to %s by %d", location,direction,displacement));}
+
+
+//        int x, y;
+//        switch (direction) {
+//            case STILL:
+//                return location;
+//            case NORTH:
+//                x = location.getX(); y = (location.getY()-displacement <= 0 ? height - (displacement-location.getY()) : location.getY()) - displacement;
+//                break;
+//            case EAST:
+//                x = (location.getX()+displacement >=  width ?  (displacement-(width-location.getX())) : location.getX()) + displacement; y = location.getY(); break;
+//            case SOUTH:
+//                x = location.getX();  y = (location.getY()+displacement >=  height ?  (displacement-(height-location.getY())) : location.getY()) + displacement; break;
+//            case WEST:
+//                x = (location.getX()-displacement <= 0 ? width - (displacement-location.getX()) : location.getX() - displacement); y = location.getY(); break;
+//
+//            default:
+//                throw new IllegalArgumentException(String.format("Unknown direction %s encountered", direction));
+//        }
+//        if(displacement>24){
+//            Logging.logger.severe(String.format("Displacement found [%d, %d] Map dimensions %d * %d",x,y,width,height));
+//        }
+//        return locations[x][y];
+
+
+        switch (direction) {
+            case STILL:
+                return location;
+            case NORTH:
+                return locations[location.getX()][location.getY()-displacement < 0 ? height - (displacement-location.getY()) : location.getY() - displacement];
+            case EAST:
+                return locations[location.getX()+displacement >=  width ?  displacement-(width-location.getX()) : location.getX() + displacement][location.getY()];
+            case SOUTH:
+                return locations[location.getX()][location.getY()+displacement >=  height ?  displacement-(height-location.getY()) : location.getY() + displacement];
+            case WEST:
+                return locations[location.getX()-displacement < 0 ? width - (displacement-location.getX()) : location.getX() - displacement][location.getX()];
+
+            default:
+                throw new IllegalArgumentException(String.format("Unknown direction %s encountered", direction));
+        }
+    }
+
     public Site getSite(Location loc, Direction dir) {
         Location target = getLocation(loc, dir);
+        return contents[target.x][target.y];
+    }
+
+    public Site getSite(Location loc, Direction dir, int displacement){
+        Location target = getLocation(loc,dir,displacement);
         return contents[target.x][target.y];
     }
 
