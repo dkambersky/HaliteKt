@@ -203,7 +203,9 @@ fun nextMove(loc: Location): Direction {
                     val nextSite = gameMap.getSite(nextTile)
                     if (site.strength >= nextSite.strength || (nextSite.owner == myId && site.strength > (PROD_MULTIPLIER * site.production))) {
                         return loc.directionTo(nextTile)
-                    } else return Direction.STILL
+                    }
+
+                    return Direction.STILL
 
                 }
 
@@ -319,12 +321,12 @@ fun getBestLocation(loc: Location): Location? {
     var locMax:Location? = null
     var heurMax = 0f
 
-    for(candidate in graph.iteratorAt(loc)){
+    for(candidate in graph.iteratorAt(loc)) {
         val site = gameMap!!.getSite(candidate)
-        if(site.owner != myId){
+        if (site.owner != myId) {
 
             val candidateHeur = expansionHeuristic(loc)
-            if(heurMax < candidateHeur){
+            if (heurMax < candidateHeur) {
                 /* New max! */
                 heurMax = candidateHeur
                 locMax = candidate
