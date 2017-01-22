@@ -205,7 +205,7 @@ fun nextMove(loc: Location): Direction {
                         return loc.directionTo(nextTile)
                     }
 
-                    return Direction.STILL
+                        return Direction.STILL
 
                 }
 
