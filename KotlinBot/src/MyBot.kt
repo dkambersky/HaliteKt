@@ -63,7 +63,7 @@ val TIME_SOFT_CAP = 1300
 val PROD_IMPORTANCE_FACTOR = 0.7f //.5 when it's weighed the same, 1.0 disregards STR
 
 /* Logging */
-val LOGGING_LEVEL: Level = Level.OFF // We can debug now! 
+val LOGGING_LEVEL: Level = Level.OFF // We can debug now!
 const val BOT_NAME = "DavKotlinBot_v1"
 const val LOGFILE_PREFIX = "../logs/"
 const val LOGFILE_SUFFIX = ".txt"
@@ -121,7 +121,7 @@ fun main(args: Array<String>) {
     initMap()
     graph = HaliteGraph(GameMap.map)
 
-    Networking.sendInit("DavKotlinBot")
+    Networking.sendInit(BOT_NAME)
     logger.info("Initialization took ${System.currentTimeMillis() - startTime / 1000} seconds.")
 
     while (true) {
