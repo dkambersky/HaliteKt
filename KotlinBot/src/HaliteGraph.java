@@ -33,7 +33,11 @@ public class HaliteGraph {
                         loc.x, loc.y, neighbor.x, neighbor.y));
 
                 LocationEdge edge = graph.addEdge(loc, neighbor);
-                edge.setLoc(loc,neighbor);
+
+                if (edge !=null ) {edge.setLoc(loc,neighbor);}
+
+                LocationEdge edge2 = graph.addEdge(neighbor, loc);
+                if (edge != null ) {edge2.setLoc(neighbor,loc);}
 
             }
         }

@@ -63,7 +63,7 @@ val TIME_SOFT_CAP = 1300
 val PROD_IMPORTANCE_FACTOR = 0.7f //.5 when it's weighed the same, 1.0 disregards STR
 
 /* Logging */
-val LOGGING_LEVEL: Level = Level.WARNING
+val LOGGING_LEVEL: Level = Level.OFF // We can debug now! 
 const val BOT_NAME = "DavKotlinBot_v1"
 const val LOGFILE_PREFIX = "../logs/"
 const val LOGFILE_SUFFIX = ".txt"
@@ -201,11 +201,12 @@ fun nextMove(loc: Location): Direction {
 
 
                     val nextSite = gameMap.getSite(nextTile)
-                    if (site.strength >= nextSite.strength || (nextSite.owner == myId && site.strength > (PROD_MULTIPLIER * site.production))) {
+                    if ((site.strength >= nextSite.strength && nextSite.owner != myId) || (nextSite.owner == myId && site.strength > (PROD_MULTIPLIER * site.production))) {
+                        logger.severe { "$loc moving to $nextTile, checks passed woo" }
                         return loc.directionTo(nextTile)
                     }
 
-                        return Direction.STILL
+                    return Direction.STILL
 
                 }
 
@@ -318,14 +319,21 @@ fun detectBorder(loc: Location): TileLocation {
 
 fun getBestLocation(loc: Location): Location? {
 
-    var locMax:Location? = null
+    var locMax: Location? = null
     var heurMax = 0f
 
-    for(candidate in graph.iteratorAt(loc)) {
+
+    var counter = 0
+    graph.iteratorAt(loc).forEach { counter++}
+    Logging.logger.severe { "Iterator foreach ends at $counter "}
+
+    for (candidate in graph.iteratorAt(loc)) {
+        Logging.logger.severe { "Trying $candidate for $loc." }
         val site = gameMap!!.getSite(candidate)
         if (site.owner != myId) {
 
             val candidateHeur = expansionHeuristic(loc)
+            Logging.logger.severe { "Checking $candidate for origin $loc, max: $heurMax at $locMax" }
             if (heurMax < candidateHeur) {
                 /* New max! */
                 heurMax = candidateHeur
