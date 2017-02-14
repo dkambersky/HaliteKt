@@ -1,9 +1,6 @@
 import org.jgrapht.GraphPath;
-import org.jgrapht.WeightedGraph;
 import org.jgrapht.alg.shortestpath.BidirectionalDijkstraShortestPath;
 import org.jgrapht.alg.shortestpath.ListSingleSourcePathsImpl;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.ClosestFirstIterator;
 
@@ -15,18 +12,15 @@ import java.util.Iterator;
  */
 public class HaliteGraph {
 
-    private WeightedGraph<Location,DefaultWeightedEdge> graph;
-
-
-
-    private BidirectionalDijkstraShortestPath<Location,DefaultWeightedEdge> dijkstraWeighted;
-    private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraRadius;
+    private static final float WEIGHT_PER_MOVE = 0.25f;
+    private HaliteMapGraph<Location, LocationEdge> graph;
+    private BidirectionalDijkstraShortestPath<Location, LocationEdge> dijkstraWeighted;
+    private BidirectionalDijkstraShortestPath<Location, LocationEdge> dijkstraRadius;
 
     public HaliteGraph(GameMap map) {
 
         /* Base graph */
-        graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class
-        );
+        graph = new HaliteMapGraph<>(LocationEdge.class);
 
         for (Location loc : map) {
             Logging.logger.finer(String.format("Adding [%d,%d] to graph", loc.x, loc.y));
@@ -38,10 +32,12 @@ public class HaliteGraph {
                 Logging.logger.finer(String.format("Adding edge [%d,%d] - [%d,%d] to graph",
                         loc.x, loc.y, neighbor.x, neighbor.y));
 
-                DefaultWeightedEdge edge = new DefaultWeightedEdge();
-                graph.addEdge(loc, neighbor);
-                graph.setEdgeWeight(edge,loc.getWeight());
+                LocationEdge edge = graph.addEdge(loc, neighbor);
 
+                if (edge !=null ) {edge.setLoc(loc,neighbor);}
+
+                LocationEdge edge2 = graph.addEdge(neighbor, loc);
+                if (edge != null ) {edge2.setLoc(neighbor,loc);}
 
             }
         }
@@ -53,38 +49,38 @@ public class HaliteGraph {
 
     }
 
-    public GraphPath<Location, DefaultWeightedEdge> path(Location from, Location to) {
-        return dijkstraWeighted().getPath(from,to);
+    public GraphPath<Location, LocationEdge> path(Location from, Location to) {
+        return dijkstraWeighted().getPath(from, to);
     }
 
-    public ListSingleSourcePathsImpl pathsToRadius(Location from){
+    public ListSingleSourcePathsImpl pathsToRadius(Location from) {
         // TODO not sure if dijkstraRadius is initialized correctly
 
-     return (ListSingleSourcePathsImpl) dijkstraRadius().
-             getPaths(from);
+        return (ListSingleSourcePathsImpl) dijkstraRadius().
+                getPaths(from);
 
     }
 
-        private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraWeighted() {
-        if (dijkstraWeighted==null){
+    private BidirectionalDijkstraShortestPath<Location, LocationEdge> dijkstraWeighted() {
+        if (dijkstraWeighted == null) {
             dijkstraWeighted = new BidirectionalDijkstraShortestPath<>(graph);
         }
         return dijkstraWeighted;
     }
 
-    private BidirectionalDijkstraShortestPath<Location, DefaultWeightedEdge> dijkstraRadius() {
-        if (dijkstraRadius==null){
-            dijkstraRadius = new BidirectionalDijkstraShortestPath<>(graph,MyBotKt.getSEARCH_RADIUS());
+    private BidirectionalDijkstraShortestPath<Location, LocationEdge> dijkstraRadius() {
+        if (dijkstraRadius == null) {
+            dijkstraRadius = new BidirectionalDijkstraShortestPath<>(graph, MyBotKt.getSEARCH_RADIUS());
         }
         return dijkstraRadius;
     }
 
-    public Iterator<Location> iteratorAt(Location loc){
-        return new ClosestFirstIterator<>(graph, loc,MyBotKt.getSEARCH_RADIUS());
+    public Iterator<Location> iteratorAt(Location loc) {
+        return new ClosestFirstIterator<>(graph, loc, MyBotKt.getSEARCH_RADIUS());
 
     }
 
-    public Iterator<Location> iteratorBFS(Location loc ){
-        return new BreadthFirstIterator<>(graph,loc);
+    public Iterator<Location> iteratorBFS(Location loc) {
+        return new BreadthFirstIterator<>(graph, loc);
     }
 }
