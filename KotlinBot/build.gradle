@@ -1,0 +1,26 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:0.9.66'
+    }
+}
+apply plugin: "kotlin"
+apply plugin: 'application'
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:0.9.66'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'MyBotKt'
+
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
